@@ -41,8 +41,8 @@ void executeSOURCE()
 {
     regex delim("[^\\s,]+");
     string command;
-    system("rm -rf ../data/temp");
-    system("mkdir ../data/temp");
+    // system("rm -rf ../data/temp");
+    // system("mkdir ../data/temp");
 
 
     logger.log("executeSOURCE");
