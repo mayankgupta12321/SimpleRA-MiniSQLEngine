@@ -1,0 +1,8 @@
+TEMP_Q5_1 <- CROSS Student Advisor
+TEMP_Q5_2 <- SELECT Advisor_id == Adv_Id FROM TEMP_Q5_1
+TEMP_Q5_3 <- SELECT Stud_sex == 1 FROM TEMP_Q5_2
+TEMP_Q5_4 <- SELECT Adv_Id == 1 FROM TEMP_Q5_3
+TEMP_Q5_5 <- CROSS TEMP_Q5_4 Marks
+TEMP_Q5_6 <- SELECT Student_Stud_Id == Marks_Stud_Id FROM TEMP_Q5_5
+Q5 <- SELECT Maths_marks > 70 FROM TEMP_Q5_6
+PRINT Q5

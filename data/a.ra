@@ -1,0 +1,3 @@
+TEMP_Q1_1 <- SELECT Stud_sex == 0 FROM Student
+Q1 <- PROJECT Stud_Id, Stud_age FROM TEMP_Q1_1
+PRINT Q1

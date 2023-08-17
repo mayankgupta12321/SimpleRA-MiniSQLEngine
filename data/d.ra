@@ -1,0 +1,8 @@
+TEMP_Q4_1 <- CROSS Student Marks
+TEMP_Q4_2 <- SELECT Student_Stud_Id == Marks_Stud_Id FROM TEMP_Q4_1
+TEMP_Q4_3 <- SELECT Maths_marks >= 70 FROM TEMP_Q4_2
+TEMP_Q4_4 <- SELECT Physics_marks > 60 FROM TEMP_Q4_3
+TEMP_Q4_5 <- SELECT Stud_age >= 16 FROM TEMP_Q4_4
+TEMP_Q4_6 <- SELECT Stud_age <= 18 FROM TEMP_Q4_5
+Q4 <- PROJECT Student_Stud_Id,Maths_marks,Physics_marks,Stud_age FROM TEMP_Q4_6
+PRINT Q4

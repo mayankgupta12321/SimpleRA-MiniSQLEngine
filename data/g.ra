@@ -1,0 +1,5 @@
+TEMP_Q7_1 <- CROSS Student Advisor
+TEMP_Q7_2 <- SELECT Advisor_id == Adv_Id FROM TEMP_Q7_1
+TEMP_Q7_3 <- SELECT Adv_age > 40 FROM TEMP_Q7_2
+Q7 <- PROJECT Stud_Id, Adv_Id FROM TEMP_Q7_3
+PRINT Q7

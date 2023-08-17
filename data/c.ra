@@ -1,0 +1,5 @@
+TEMP_Q3_1 <- CROSS Student Advisor
+TEMP_Q3_2 <- SELECT Advisor_id == Adv_Id FROM TEMP_Q3_1
+TEMP_Q3_3 <- SELECT Stud_sex != Adv_sex FROM TEMP_Q3_2
+Q3 <- PROJECT Stud_Id,Adv_Id,Stud_sex,Adv_sex FROM TEMP_Q3_3
+PRINT Q3

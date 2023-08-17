@@ -1,0 +1,6 @@
+TEMP_Q8_1 <- CROSS Student Marks
+TEMP_Q8_2 <- SELECT Student_Stud_Id == Marks_Stud_Id FROM TEMP_Q8_1
+TEMP_Q8_3 <- SELECT Advisor_id == 2 FROM TEMP_Q8_2
+TEMP_Q8_4 <- SELECT Maths_marks > 90 FROM TEMP_Q8_3
+Q8 <- PROJECT Student_Stud_Id FROM TEMP_Q8_4
+PRINT Q8
