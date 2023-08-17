@@ -1,0 +1,3 @@
+LOAD Student
+LOAD Advisor
+LOAD Marks
