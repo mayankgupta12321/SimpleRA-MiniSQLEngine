@@ -1,4 +1,5 @@
 #include "tableCatalogue.h"
+#include "matrixCatalogue.h"
 
 using namespace std;
 
@@ -7,13 +8,17 @@ enum QueryType
     CLEAR,
     CROSS,
     DISTINCT,
+    EXPORT_MATRIX,
     EXPORT,
     INDEX,
     JOIN,
     LIST,
+    LOAD_MATRIX,
     LOAD,
+    PRINT_MATRIX,
     PRINT,
     PROJECTION,
+    RENAME_MATRIX,
     RENAME,
     SELECTION,
     SORT,
@@ -86,6 +91,9 @@ public:
     string renameToColumnName = "";
     string renameRelationName = "";
 
+    string renameFromMatrixName = "";
+    string renameToMatrixName = "";
+
     SelectType selectType = NO_SELECT_CLAUSE;
     BinaryOperator selectionBinaryOperator = NO_BINOP_CLAUSE;
     string selectionResultRelationName = "";
@@ -120,6 +128,11 @@ bool syntacticParseRENAME();
 bool syntacticParseSELECTION();
 bool syntacticParseSORT();
 bool syntacticParseSOURCE();
+
+bool syntacticParseLOAD_MATRIX();
+bool syntacticParsePRINT_MATRIX();
+bool syntacticParseRENAME_MATRIX();
+bool syntacticParseEXPORT_MATRIX();
 
 bool isFileExists(string tableName);
 bool isQueryFile(string fileName);

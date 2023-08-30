@@ -4,6 +4,7 @@ bool syntacticParse()
 {
     logger.log("syntacticParse");
     string possibleQueryType = tokenizedQuery[0];
+    string possibleQueryType_2 = tokenizedQuery[1];
 
     if (tokenizedQuery.size() < 2)
     {
@@ -17,12 +18,20 @@ bool syntacticParse()
         return syntacticParseINDEX();
     else if (possibleQueryType == "LIST")
         return syntacticParseLIST();
+    else if (possibleQueryType == "LOAD" && possibleQueryType_2 == "MATRIX")
+        return syntacticParseLOAD_MATRIX();
     else if (possibleQueryType == "LOAD")
         return syntacticParseLOAD();
+    else if (possibleQueryType == "PRINT" && possibleQueryType_2 == "MATRIX")
+        return syntacticParsePRINT_MATRIX();
     else if (possibleQueryType == "PRINT")
         return syntacticParsePRINT();
+    else if (possibleQueryType == "RENAME" && possibleQueryType_2 == "MATRIX")
+        return syntacticParseRENAME_MATRIX();
     else if (possibleQueryType == "RENAME")
         return syntacticParseRENAME();
+    else if (possibleQueryType == "EXPORT" && possibleQueryType_2 == "MATRIX")
+        return syntacticParseEXPORT_MATRIX();
     else if(possibleQueryType == "EXPORT")
         return syntacticParseEXPORT();
     else if(possibleQueryType == "SOURCE")
@@ -99,6 +108,9 @@ void ParsedQuery::clear()
     this->renameFromColumnName = "";
     this->renameToColumnName = "";
     this->renameRelationName = "";
+
+    this->renameFromMatrixName = "";
+    this->renameToMatrixName = "";
 
     this->selectType = NO_SELECT_CLAUSE;
     this->selectionBinaryOperator = NO_BINOP_CLAUSE;
