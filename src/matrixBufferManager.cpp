@@ -53,14 +53,14 @@ void MatrixBufferManager::writePage(string matrixName, int pageRowIndex, int pag
     page.writePage();
 }
 
-void MatrixBufferManager::renameInPool(string curPageName, string newPageName)
-{
+void MatrixBufferManager::deleteFromPool(string pageName) {
     logger.log("MatrixBufferManager::renameInPool");
-    for (auto &page : this->pages) {
-        if (page.pageName == curPageName) {
-            page.pageName = newPageName;
-            return;
+    int sz = pages.size();
+    while(sz--) {
+        if(pages.front().pageName != pageName) {
+            pages.push_back(pages.front());
         }
+        pages.pop_front();
     }
 }
 
@@ -71,11 +71,9 @@ void MatrixBufferManager::renameFile(string curFileName, string newFileName)
     else logger.log("MatrixBufferManager::renameFile: Success");
     
     if (this->inPool(curFileName)) {
-        return this->renameInPool(curFileName, newFileName);
+        return this->deleteFromPool(curFileName);
     }
 }
-
-
 
 void MatrixBufferManager::renameFile(string curMatrixName, string newMatrixName, int pageRowIndex, int pageColumnIndex) {
     logger.log("MatrixBufferManager::renameFile");

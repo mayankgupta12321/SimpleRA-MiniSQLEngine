@@ -23,7 +23,11 @@ public:
     void makePermanent();
     bool isPermanent();
     void rename(string newMatrixName);
-    MatrixPage* getPage(int pageRowIndex, int pageColumnIndex);
+    void transpose(vector<vector<int>>& grid);
+    void transposeMatrix();
+    bool isSymmetric(vector<vector<int>>& grid);
+    bool isSymmetric();
+    void compute();
     void unload();
 
 

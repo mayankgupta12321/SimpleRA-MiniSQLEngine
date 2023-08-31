@@ -23,6 +23,9 @@ enum QueryType
     SELECTION,
     SORT,
     SOURCE,
+    TRANSPOSE_MATRIX,
+    CHECKSYMMETRY,
+    COMPUTE,
     UNDETERMINED
 };
 
@@ -80,8 +83,10 @@ public:
     string joinSecondColumnName = "";
 
     string loadRelationName = "";
-
     string printRelationName = "";
+    string transposeRelationName  = "";
+    string checksymmetryRelationName  = "";
+    string computeRelationName  = "";
 
     string projectionResultRelationName = "";
     vector<string> projectionColumnList;
@@ -133,6 +138,9 @@ bool syntacticParseLOAD_MATRIX();
 bool syntacticParsePRINT_MATRIX();
 bool syntacticParseRENAME_MATRIX();
 bool syntacticParseEXPORT_MATRIX();
+bool syntacticParseTRANSPOSE_MATRIX();
+bool syntacticParseCHECKSYMMETRY();
+bool syntacticParseCOMPUTE();
 
 bool isFileExists(string tableName);
 bool isQueryFile(string fileName);

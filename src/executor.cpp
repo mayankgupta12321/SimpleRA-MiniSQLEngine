@@ -21,6 +21,9 @@ void executeCommand(){
         case SELECTION: executeSELECTION(); break;
         case SORT: executeSORT(); break;
         case SOURCE: executeSOURCE(); break;
+        case TRANSPOSE_MATRIX: executeTRANSPOSE_MATRIX(); break;
+        case CHECKSYMMETRY: executeCHECKSYMMETRY(); break;
+        case COMPUTE: executeCOMPUTE(); break;
         default: cout<<"PARSING ERROR"<<endl;
     }
 

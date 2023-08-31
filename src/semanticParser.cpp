@@ -21,6 +21,9 @@ bool semanticParse(){
         case SELECTION: return semanticParseSELECTION();
         case SORT: return semanticParseSORT();
         case SOURCE: return semanticParseSOURCE();
+        case TRANSPOSE_MATRIX: return semanticParseTRANSPOSE_MATRIX();
+        case CHECKSYMMETRY: return semanticParseCHECKSYMMETRY();
+        case COMPUTE: return semanticParseCOMPUTE();
         default: cout<<"SEMANTIC ERROR"<<endl;
     }
 

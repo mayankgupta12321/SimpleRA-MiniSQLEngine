@@ -159,6 +159,73 @@ void Matrix::rename(string newMatrixName) {
     this->sourceFileName = "../data/" + newMatrixName + ".csv";
 }
 
+void Matrix::transpose(vector<vector<int>>& grid) {
+    for (int i = 0; i < grid.size(); i++) {
+        for (int j = i + 1; j < grid.size(); j++) {
+            swap(grid[i][j], grid[j][i]);
+        }
+    }
+}
+
+void Matrix::transposeMatrix()  {
+    logger.log("Matrix::transposeMatrix");
+    for(int pageRowCounter = 0; pageRowCounter < this->smallMatrixCount; pageRowCounter++) {
+        for(int pageColumnCounter = pageRowCounter; pageColumnCounter < this->smallMatrixCount; pageColumnCounter++) {
+            if(pageRowCounter == pageColumnCounter) {
+                MatrixPage matrixPage = matrixBufferManager.getPage(this->matrixName, pageRowCounter, pageColumnCounter);
+                transpose(matrixPage.elementsInPage);
+                matrixBufferManager.writePage(this->matrixName, pageRowCounter, pageColumnCounter, matrixPage.elementsInPage, this->matrixSize, this->smallMatrixSize, this->smallMatrixCount);
+                matrixBufferManager.deleteFromPool(matrixPage.pageName);
+            }
+            else {
+                MatrixPage matrixPage1 = matrixBufferManager.getPage(this->matrixName, pageRowCounter, pageColumnCounter);
+                MatrixPage matrixPage2 = matrixBufferManager.getPage(this->matrixName, pageColumnCounter, pageRowCounter);
+                transpose(matrixPage1.elementsInPage);
+                transpose(matrixPage2.elementsInPage);
+                matrixPage1.elementsInPage.swap(matrixPage2.elementsInPage);
+                matrixBufferManager.writePage(this->matrixName, pageRowCounter, pageColumnCounter, matrixPage1.elementsInPage, this->matrixSize, this->smallMatrixSize, this->smallMatrixCount);
+                matrixBufferManager.writePage(this->matrixName, pageColumnCounter, pageRowCounter, matrixPage2.elementsInPage, this->matrixSize, this->smallMatrixSize, this->smallMatrixCount);
+                matrixBufferManager.deleteFromPool(matrixPage1.pageName);
+                matrixBufferManager.deleteFromPool(matrixPage2.pageName);
+            }
+        }
+    }
+}
+
+bool Matrix::isSymmetric(vector<vector<int>>& grid) {
+    for (int i = 0; i < grid.size(); i++) {
+        for (int j = i + 1; j < grid.size(); j++) {
+            if(grid[i][j] != grid[j][i]) return false;
+        }
+    }
+    return true;
+}
+
+bool Matrix::isSymmetric() {
+    logger.log("Matrix::isSymmetric");
+    for(int pageRowCounter = 0; pageRowCounter < this->smallMatrixCount; pageRowCounter++) {
+        for(int pageColumnCounter = pageRowCounter; pageColumnCounter < this->smallMatrixCount; pageColumnCounter++) {
+            if(pageRowCounter == pageColumnCounter) {
+                MatrixPage matrixPage = matrixBufferManager.getPage(this->matrixName, pageRowCounter, pageColumnCounter);
+                if(!isSymmetric(matrixPage.elementsInPage)) return false;
+            }
+            else {
+                MatrixPage matrixPage1 = matrixBufferManager.getPage(this->matrixName, pageRowCounter, pageColumnCounter);
+                MatrixPage matrixPage2 = matrixBufferManager.getPage(this->matrixName, pageColumnCounter, pageRowCounter);
+                vector<vector<int>> grid1 = matrixPage1.elementsInPage;
+                vector<vector<int>> grid2 = matrixPage2.elementsInPage;
+                transpose(grid1);
+                if(grid1 != grid2) return false;
+            }
+        }
+    }
+    return true;
+}
+
+void Matrix::compute()  {
+    ;
+}
+
 void Matrix::unload()
 {
     logger.log("Matrix::~unload");

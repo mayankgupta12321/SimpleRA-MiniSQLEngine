@@ -36,6 +36,12 @@ bool syntacticParse()
         return syntacticParseEXPORT();
     else if(possibleQueryType == "SOURCE")
         return syntacticParseSOURCE();
+    else if (possibleQueryType == "TRANSPOSE" && possibleQueryType_2 == "MATRIX")
+        return syntacticParseTRANSPOSE_MATRIX();
+    else if(possibleQueryType == "CHECKSYMMETRY")
+        return syntacticParseCHECKSYMMETRY();
+    else if(possibleQueryType == "COMPUTE")
+        return syntacticParseCOMPUTE();
     else
     {
         string resultantRelationName = possibleQueryType;
