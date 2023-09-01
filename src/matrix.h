@@ -27,7 +27,6 @@ public:
     void transposeMatrix();
     bool isSymmetric(vector<vector<int>>& grid);
     bool isSymmetric();
-    void compute();
     void unload();
 
 

@@ -222,10 +222,6 @@ bool Matrix::isSymmetric() {
     return true;
 }
 
-void Matrix::compute()  {
-    ;
-}
-
 void Matrix::unload()
 {
     logger.log("Matrix::~unload");
