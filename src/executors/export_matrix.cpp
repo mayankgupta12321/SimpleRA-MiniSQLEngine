@@ -21,6 +21,10 @@ bool syntacticParseEXPORT_MATRIX()
 bool semanticParseEXPORT_MATRIX()
 {
     logger.log("semanticParseEXPORT_MATRIX");
+    
+    BLOCKS_READ = 0;
+    BLOCKS_WRITTEN = 0;
+
     //Table should exist
     if (matrixCatalogue.isMatrix(parsedQuery.exportRelationName))
         return true;
@@ -33,5 +37,8 @@ void executeEXPORT_MATRIX()
     logger.log("executeEXPORT_MATRIX");
     Matrix* matrix = matrixCatalogue.getMatrix(parsedQuery.exportRelationName);
     matrix->makePermanent();
-    return;
+
+    cout << "Number of blocks read: " << BLOCKS_READ << endl;
+    cout << "Number of blocks written:: " << BLOCKS_WRITTEN << endl;
+    cout << "Number of blocks accessed: " << BLOCKS_READ + BLOCKS_WRITTEN << endl;
 }

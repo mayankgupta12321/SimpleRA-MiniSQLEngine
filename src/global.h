@@ -1,4 +1,4 @@
-#include"executor.h"
+#include "executor.h"
 
 extern float BLOCK_SIZE;
 extern uint BLOCK_COUNT;
@@ -8,4 +8,6 @@ extern ParsedQuery parsedQuery;
 extern TableCatalogue tableCatalogue;
 extern MatrixCatalogue matrixCatalogue;
 extern BufferManager bufferManager;
-extern MatrixBufferManager matrixBufferManager;
+
+extern unsigned int BLOCKS_READ;
+extern unsigned int BLOCKS_WRITTEN;

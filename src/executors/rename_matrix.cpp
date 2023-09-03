@@ -36,6 +36,8 @@ bool semanticParseRENAME_MATRIX()
 void executeRENAME_MATRIX()
 {
     logger.log("executeRENAME_MATRIX");
+    Matrix* matrix = matrixCatalogue.getMatrix(parsedQuery.renameFromMatrixName);
+    matrix->rename(parsedQuery.renameToMatrixName);
     matrixCatalogue.renameMatrix(parsedQuery.renameFromMatrixName, parsedQuery.renameToMatrixName);
     return;
 }

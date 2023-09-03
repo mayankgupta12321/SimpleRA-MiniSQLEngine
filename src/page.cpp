@@ -25,30 +25,48 @@ Page::Page()
  * @param tableName 
  * @param pageIndex 
  */
-Page::Page(string tableName, int pageIndex)
+Page::Page(string tableName, int pageIndex, bool isMatrix)
 {
     logger.log("Page::Page");
     this->tableName = tableName;
     this->pageIndex = pageIndex;
     this->pageName = "../data/temp/" + this->tableName + "_Page" + to_string(pageIndex);
-    Table table = *tableCatalogue.getTable(tableName);
-    this->columnCount = table.columnCount;
-    uint maxRowCount = table.maxRowsPerBlock;
-    vector<int> row(columnCount, 0);
-    this->rows.assign(maxRowCount, row);
+
+    if(isMatrix) {
+        Matrix matrix = *matrixCatalogue.getMatrix(tableName);
+
+        int rowIndex = pageIndex / matrix.smallMatrixCount;
+        int columnIndex = pageIndex % matrix.smallMatrixCount;
+        
+        this->rowCount = (rowIndex == matrix.smallMatrixCount - 1) ? matrix.matrixSize - rowIndex * matrix.smallMatrixSize: matrix.smallMatrixSize;
+        this->columnCount = (columnIndex == matrix.smallMatrixCount - 1) ? matrix.matrixSize - columnIndex * matrix.smallMatrixSize: matrix.smallMatrixSize;        
+        vector<int> row(columnCount, 0);
+        this->rows.assign(rowCount, row);
+    }
+    else{
+        Table table = *tableCatalogue.getTable(tableName);
+        this->rowCount = table.rowsPerBlockCount[pageIndex];   
+        this->columnCount = table.columnCount;
+        uint maxRowCount = table.maxRowsPerBlock;
+        vector<int> row(columnCount, 0);
+        this->rows.assign(maxRowCount, row);
+    }
 
     ifstream fin(pageName, ios::in);
-    this->rowCount = table.rowsPerBlockCount[pageIndex];
     int number;
     for (uint rowCounter = 0; rowCounter < this->rowCount; rowCounter++)
     {
-        for (int columnCounter = 0; columnCounter < columnCount; columnCounter++)
+        for (int columnCounter = 0; columnCounter < this->columnCount; columnCounter++)
         {
             fin >> number;
             this->rows[rowCounter][columnCounter] = number;
         }
     }
     fin.close();
+}
+
+vector<vector<int>> Page::getRows(){
+    return this->rows;
 }
 
 /**
@@ -61,7 +79,6 @@ vector<int> Page::getRow(int rowIndex)
 {
     logger.log("Page::getRow");
     vector<int> result;
-    result.clear();
     if (rowIndex >= this->rowCount)
         return result;
     return this->rows[rowIndex];

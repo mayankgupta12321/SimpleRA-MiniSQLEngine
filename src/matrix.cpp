@@ -52,10 +52,10 @@ bool Matrix::blockify()
 
     string line, word;
 
-    vector<vector<vector<int>>> elementsInPages(this->smallMatrixCount, vector<vector<int>>(this->smallMatrixSize, vector<int>(this->smallMatrixSize, -1)));
+    
 
     int rowCounter = 0;
-    int pageRowCounter = 0;
+    vector<vector<vector<int>>> elementsInPages(this->smallMatrixCount);
 
     while (getline(fin, line))
     {
@@ -66,18 +66,29 @@ bool Matrix::blockify()
             if (!getline(s, word, ','))
                 return false;
             int element = stoi(word);
+
+            if(elementsInPages[columnCounter / this->smallMatrixSize].size() == rowCounter){
+                elementsInPages[columnCounter / this->smallMatrixSize].push_back({});
+            }
+
+            if(elementsInPages[columnCounter / this->smallMatrixSize][rowCounter].size() == columnCounter % this->smallMatrixSize){
+                elementsInPages[columnCounter / this->smallMatrixSize][rowCounter].push_back({});
+            }
+
             elementsInPages[columnCounter / this->smallMatrixSize][rowCounter][columnCounter % this->smallMatrixSize] = element;
         }
+
         rowCounter++;
         if (rowCounter == this->smallMatrixSize)
         {
             for (int pageColumnCounter = 0; pageColumnCounter < this->smallMatrixCount; pageColumnCounter++)
             {
-                matrixBufferManager.writePage(this->matrixName, pageRowCounter, pageColumnCounter, elementsInPages[pageColumnCounter], this->matrixSize, this->smallMatrixSize, this->smallMatrixCount);
+                bufferManager.writePage(this->matrixName, this->blockCount, elementsInPages[pageColumnCounter], rowCounter);
+                this->blockCount++;
             }
             rowCounter = 0;
-            pageRowCounter++;
-            fill(elementsInPages.begin(), elementsInPages.end(), vector<vector<int>>(this->smallMatrixSize, vector<int>(this->smallMatrixSize, -1)));
+            elementsInPages.clear();
+            elementsInPages.resize(this->smallMatrixCount);
         }
     }
 
@@ -85,11 +96,10 @@ bool Matrix::blockify()
     {
         for (int pageColumnCounter = 0; pageColumnCounter < this->smallMatrixCount; pageColumnCounter++)
         {
-            matrixBufferManager.writePage(this->matrixName, pageRowCounter, pageColumnCounter, elementsInPages[pageColumnCounter], this->matrixSize, this->smallMatrixSize, this->smallMatrixCount);
+            bufferManager.writePage(this->matrixName, this->blockCount, elementsInPages[pageColumnCounter], rowCounter);
+            this->blockCount++;
         }
         rowCounter = 0;
-        pageRowCounter++;
-        fill(elementsInPages.begin(), elementsInPages.end(), vector<vector<int>>(this->smallMatrixSize, vector<int>(this->smallMatrixSize, -1)));
     }
 
     return true;
@@ -101,14 +111,44 @@ void Matrix::print()
 
     int rowsToWrite = min(PRINT_COUNT, this->matrixSize);
     int columnsToWrite = min(PRINT_COUNT, this->matrixSize);
-    vector<vector<vector<int>>> elementsInPages(this->smallMatrixCount, vector<vector<int>>(this->smallMatrixSize, vector<int>(this->smallMatrixSize, -1)));
+
+    Cursor cursor(this->matrixName, 0, true);
+    vector<int> subMatrixRow;
     
-    for(int pageRowCounter = 0; pageRowCounter < this->smallMatrixCount; pageRowCounter++) {
-        for(int pageColumnCounter = 0; pageColumnCounter < this->smallMatrixCount; pageColumnCounter++) {
-            MatrixPage matrixPage = matrixBufferManager.getPage(this->matrixName, pageRowCounter, pageColumnCounter);
-            elementsInPages[pageColumnCounter] = matrixPage.getPage();
+
+    int rowIndex = 0;
+    for(int rowBlockCounter = 0; rowBlockCounter < smallMatrixCount; rowBlockCounter++) {
+
+        int rowCount = (rowBlockCounter == smallMatrixCount - 1) ? matrixSize - rowBlockCounter * smallMatrixSize: smallMatrixSize;
+        int columnCount = this->matrixSize;
+
+        vector<vector<int>> matrix(rowCount);
+
+        int columnBlockCounter = 0;
+        while(columnBlockCounter < smallMatrixCount) {
+            subMatrixRow = cursor.getNextPageRow();
+            matrix[rowIndex].insert(matrix[rowIndex].end(), subMatrixRow.begin(), subMatrixRow.end());
+            rowIndex = (rowIndex + 1) % rowCount;
+            if(rowIndex == 0){
+                columnBlockCounter++;
+            }
         }
-        this->writeRows(elementsInPages, pageRowCounter, rowsToWrite, columnsToWrite, cout);
+
+        for(int rowCounter = 0; rowCounter < rowCount; rowCounter++){
+            this->writeRow(matrix[rowCounter], cout, columnsToWrite);
+            rowsToWrite--;
+            if(rowsToWrite == 0) return;
+        }
+
+        rowIndex = 0;
+        columnBlockCounter = 0;
+    }
+}
+
+void Matrix::getNextPage(Cursor *cursor) {
+    logger.log("Matrix::getNegetNextPagext");
+    if (cursor->pageIndex < this->blockCount - 1) {
+        cursor->nextPage(cursor->pageIndex + 1);
     }
 }
 
@@ -116,23 +156,39 @@ void Matrix::makePermanent()
 {
     logger.log("Matrix::makePermanent");
     if (!this->isPermanent())
-        matrixBufferManager.deleteFile(this->sourceFileName);
+        bufferManager.deleteFile(this->sourceFileName);
 
     string newSourceFile = "../data/" + this->matrixName + ".csv";
     ofstream fout(newSourceFile, ios::out);
 
-
-    int rowsToWrite = this->matrixSize;
-    int columnsToWrite = this->matrixSize;
-
-    vector<vector<vector<int>>> elementsInPages(this->smallMatrixCount, vector<vector<int>>(this->smallMatrixSize, vector<int>(this->smallMatrixSize, -1)));
+    Cursor cursor(this->matrixName, 0, true);
+    vector<int> subMatrixRow;
     
-    for(int pageRowCounter = 0; pageRowCounter < this->smallMatrixCount; pageRowCounter++) {
-        for(int pageColumnCounter = 0; pageColumnCounter < this->smallMatrixCount; pageColumnCounter++) {
-            MatrixPage matrixPage = matrixBufferManager.getPage(this->matrixName, pageRowCounter, pageColumnCounter);
-            elementsInPages[pageColumnCounter] = matrixPage.getPage();
+
+    int rowIndex = 0;
+    for(int rowBlockCounter = 0; rowBlockCounter < smallMatrixCount; rowBlockCounter++) {
+
+        int rowCount = (rowBlockCounter == smallMatrixCount - 1) ? matrixSize - rowBlockCounter * smallMatrixSize: smallMatrixSize;
+        int columnCount = this->matrixSize;
+
+        vector<vector<int>> matrix(rowCount);
+
+        int columnBlockCounter = 0;
+        while(columnBlockCounter < smallMatrixCount) {
+            subMatrixRow = cursor.getNextPageRow();
+            matrix[rowIndex].insert(matrix[rowIndex].end(), subMatrixRow.begin(), subMatrixRow.end());
+            rowIndex = (rowIndex + 1) % rowCount;
+            if(rowIndex == 0){
+                columnBlockCounter++;
+            }
         }
-        this->writeRows(elementsInPages, pageRowCounter, rowsToWrite, columnsToWrite, fout);
+
+        for(int rowCounter = 0; rowCounter < rowCount; rowCounter++){
+            this->writeRow(matrix[rowCounter], fout, matrix[rowCounter].size(), true);
+        }
+
+        rowIndex = 0;
+        columnBlockCounter = 0;
     }
 
     fout.close();
@@ -149,73 +205,86 @@ bool Matrix::isPermanent()
 void Matrix::rename(string newMatrixName) {
     logger.log("Matrix::~rename");
 
-    for(int pageRowCounter = 0; pageRowCounter < this->smallMatrixCount; pageRowCounter++) {
-        for(int pageColumnCounter = 0; pageColumnCounter < this->smallMatrixCount; pageColumnCounter++) {
-            matrixBufferManager.renameFile(this->matrixName, newMatrixName, pageRowCounter, pageColumnCounter);
-        }
+    for (int blockCounter = 0; blockCounter < this->blockCount; blockCounter++) {
+        bufferManager.renameFile(this->matrixName, newMatrixName, blockCounter);
     }
 
     this->matrixName = newMatrixName;
     this->sourceFileName = "../data/" + newMatrixName + ".csv";
 }
 
-void Matrix::transpose(vector<vector<int>>& grid) {
-    for (int i = 0; i < grid.size(); i++) {
-        for (int j = i + 1; j < grid.size(); j++) {
-            swap(grid[i][j], grid[j][i]);
+vector<vector<int>> Matrix::transpose(vector<vector<int>> &grid) {
+    int n = grid.size();
+    int m = grid[0].size();
+
+    vector<vector<int>> grid_t(m ,vector<int>(n));
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            grid_t[j][i] = grid[i][j];
         }
     }
+
+    return grid_t;
 }
 
 void Matrix::transposeMatrix()  {
     logger.log("Matrix::transposeMatrix");
+
+    
     for(int pageRowCounter = 0; pageRowCounter < this->smallMatrixCount; pageRowCounter++) {
         for(int pageColumnCounter = pageRowCounter; pageColumnCounter < this->smallMatrixCount; pageColumnCounter++) {
+            int pageIndex1 = pageRowCounter * smallMatrixCount + pageColumnCounter;
+            int pageIndex2 = pageColumnCounter * smallMatrixCount + pageRowCounter;
+
             if(pageRowCounter == pageColumnCounter) {
-                MatrixPage matrixPage = matrixBufferManager.getPage(this->matrixName, pageRowCounter, pageColumnCounter);
-                transpose(matrixPage.elementsInPage);
-                matrixBufferManager.writePage(this->matrixName, pageRowCounter, pageColumnCounter, matrixPage.elementsInPage, this->matrixSize, this->smallMatrixSize, this->smallMatrixCount);
-                matrixBufferManager.deleteFromPool(matrixPage.pageName);
+                Cursor cursor(this->matrixName, pageIndex1, true);
+                vector<vector<int>> subMatrix = cursor.getPage();
+                subMatrix = transpose(subMatrix);
+                bufferManager.writePage(this->matrixName, pageIndex1, subMatrix, subMatrix.size());
+                bufferManager.deleteFromPool(cursor.page.pageName);
             }
             else {
-                MatrixPage matrixPage1 = matrixBufferManager.getPage(this->matrixName, pageRowCounter, pageColumnCounter);
-                MatrixPage matrixPage2 = matrixBufferManager.getPage(this->matrixName, pageColumnCounter, pageRowCounter);
-                transpose(matrixPage1.elementsInPage);
-                transpose(matrixPage2.elementsInPage);
-                matrixPage1.elementsInPage.swap(matrixPage2.elementsInPage);
-                matrixBufferManager.writePage(this->matrixName, pageRowCounter, pageColumnCounter, matrixPage1.elementsInPage, this->matrixSize, this->smallMatrixSize, this->smallMatrixCount);
-                matrixBufferManager.writePage(this->matrixName, pageColumnCounter, pageRowCounter, matrixPage2.elementsInPage, this->matrixSize, this->smallMatrixSize, this->smallMatrixCount);
-                matrixBufferManager.deleteFromPool(matrixPage1.pageName);
-                matrixBufferManager.deleteFromPool(matrixPage2.pageName);
+                Cursor cursor1(this->matrixName, pageIndex1, true);
+                Cursor cursor2(this->matrixName, pageIndex2, true);
+
+                vector<vector<int>> subMatrix1 = cursor1.getPage();
+                vector<vector<int>> subMatrix2 = cursor2.getPage();
+
+                subMatrix1 = transpose(subMatrix1);
+                subMatrix2 = transpose(subMatrix2);
+
+                bufferManager.writePage(this->matrixName, pageIndex1, subMatrix2, subMatrix2.size());
+                bufferManager.writePage(this->matrixName, pageIndex2, subMatrix1, subMatrix1.size());
+
+                bufferManager.deleteFromPool(cursor1.page.pageName);
+                bufferManager.deleteFromPool(cursor2.page.pageName);
             }
         }
     }
-}
-
-bool Matrix::isSymmetric(vector<vector<int>>& grid) {
-    for (int i = 0; i < grid.size(); i++) {
-        for (int j = i + 1; j < grid.size(); j++) {
-            if(grid[i][j] != grid[j][i]) return false;
-        }
-    }
-    return true;
 }
 
 bool Matrix::isSymmetric() {
     logger.log("Matrix::isSymmetric");
     for(int pageRowCounter = 0; pageRowCounter < this->smallMatrixCount; pageRowCounter++) {
         for(int pageColumnCounter = pageRowCounter; pageColumnCounter < this->smallMatrixCount; pageColumnCounter++) {
+            int pageIndex1 = pageRowCounter * smallMatrixCount + pageColumnCounter;
+            int pageIndex2 = pageColumnCounter * smallMatrixCount + pageRowCounter;
+
             if(pageRowCounter == pageColumnCounter) {
-                MatrixPage matrixPage = matrixBufferManager.getPage(this->matrixName, pageRowCounter, pageColumnCounter);
-                if(!isSymmetric(matrixPage.elementsInPage)) return false;
+                Cursor cursor(this->matrixName, pageIndex1, true);
+                vector<vector<int>> subMatrix = cursor.getPage();
+                vector<vector<int>> subMatrix_t = transpose(subMatrix);
+                if(subMatrix_t != subMatrix) return false;
             }
             else {
-                MatrixPage matrixPage1 = matrixBufferManager.getPage(this->matrixName, pageRowCounter, pageColumnCounter);
-                MatrixPage matrixPage2 = matrixBufferManager.getPage(this->matrixName, pageColumnCounter, pageRowCounter);
-                vector<vector<int>> grid1 = matrixPage1.elementsInPage;
-                vector<vector<int>> grid2 = matrixPage2.elementsInPage;
-                transpose(grid1);
-                if(grid1 != grid2) return false;
+                Cursor cursor1(this->matrixName, pageIndex1, true);
+                Cursor cursor2(this->matrixName, pageIndex2, true);
+
+                vector<vector<int>> subMatrix1 = cursor1.getPage();
+                vector<vector<int>> subMatrix2 = cursor2.getPage();
+
+                vector<vector<int>> subMatrix1_t = transpose(subMatrix1);
+                if(subMatrix1_t != subMatrix2) return false;
             }
         }
     }
@@ -225,11 +294,10 @@ bool Matrix::isSymmetric() {
 void Matrix::unload()
 {
     logger.log("Matrix::~unload");
-    for(int pageRowCounter = 0; pageRowCounter < this->smallMatrixCount; pageRowCounter++) {
-        for(int pageColumnCounter = 0; pageColumnCounter < this->smallMatrixCount; pageColumnCounter++) {
-            matrixBufferManager.deleteFile(this->matrixName, pageRowCounter, pageColumnCounter);
-        }
-    }
+    
+    for (int blockCounter = 0; blockCounter < this->blockCount; blockCounter++)
+        bufferManager.deleteFile(this->matrixName, blockCounter);
+
     if (!isPermanent())
-        matrixBufferManager.deleteFile(this->sourceFileName);
+        bufferManager.deleteFile(this->sourceFileName);
 }

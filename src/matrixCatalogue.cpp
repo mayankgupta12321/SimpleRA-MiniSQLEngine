@@ -26,8 +26,6 @@ void MatrixCatalogue::renameMatrix(string curMatrixName, string newMatrixName)
     logger.log("MatrixCatalogue::renameMatrix"); 
     Matrix* matrix = this->matrices[curMatrixName];
     this->matrices.erase(curMatrixName);
-    matrix->rename(newMatrixName);
-
     this->matrices[newMatrixName] = matrix;
 }
 

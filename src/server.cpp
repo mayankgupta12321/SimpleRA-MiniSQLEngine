@@ -12,7 +12,9 @@ ParsedQuery parsedQuery;
 TableCatalogue tableCatalogue;
 MatrixCatalogue matrixCatalogue;
 BufferManager bufferManager;
-MatrixBufferManager matrixBufferManager;
+
+unsigned int BLOCKS_READ = 0;
+unsigned int BLOCKS_WRITTEN = 0;
 
 void doCommand()
 {

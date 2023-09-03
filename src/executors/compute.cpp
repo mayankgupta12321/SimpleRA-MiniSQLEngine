@@ -26,18 +26,23 @@ bool semanticParseCOMPUTE(){
     return true;
 }   
 
-vector<vector<int>> transpose(vector<vector<int>> grid) {
-    for (int i = 0; i < grid.size(); i++) {
-        for (int j = i + 1; j < grid.size(); j++) {
-            swap(grid[i][j], grid[j][i]);
+vector<vector<int>> transpose(vector<vector<int>> &grid) {
+    int n = grid.size();
+    int m = grid[0].size();
+
+    vector<vector<int>> grid_t(m ,vector<int>(n));
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            grid_t[j][i] = grid[i][j];
         }
     }
-    return grid;
+
+    return grid_t;
 }
 
 vector<vector<int>> compute(vector<vector<int>> grid, vector<vector<int>> grid_T) {
     for (int i = 0; i < grid.size(); i++) {
-        for (int j = 0; j < grid.size(); j++) {
+        for (int j = 0; j < grid[0].size(); j++) {
             grid[i][j] -= grid_T[i][j];
         }
     }
@@ -47,44 +52,58 @@ vector<vector<int>> compute(vector<vector<int>> grid, vector<vector<int>> grid_T
 void executeCOMPUTE()
 {
     logger.log("executeCOMPUTE");
+    
+    BLOCKS_READ = 0;
+    BLOCKS_WRITTEN = 0;
+    
     Matrix* matrix = matrixCatalogue.getMatrix(parsedQuery.computeRelationName);
     string matrixName = matrix->matrixName;
     unsigned int matrixSize = matrix->matrixSize;
     unsigned int smallMatrixSize = matrix->smallMatrixSize;
     unsigned int smallMatrixCount = matrix->smallMatrixCount;
+    unsigned int blockCount = matrix->blockCount;
 
     string resultantMatrixName = matrixName + "_RESULT";
     Matrix *resultantMatrix = new Matrix(resultantMatrixName);
     resultantMatrix->matrixSize = matrixSize;
     resultantMatrix->smallMatrixSize = smallMatrixSize;
     resultantMatrix->smallMatrixCount = smallMatrixCount;
+    resultantMatrix->blockCount = blockCount;
     
     for(int pageRowCounter = 0; pageRowCounter < smallMatrixCount; pageRowCounter++) {
         for(int pageColumnCounter = pageRowCounter; pageColumnCounter < smallMatrixCount; pageColumnCounter++) {
+            int pageIndex1 = pageRowCounter * smallMatrixCount + pageColumnCounter;
+            int pageIndex2 = pageColumnCounter * smallMatrixCount + pageRowCounter;
+
             if(pageRowCounter == pageColumnCounter) {
-                MatrixPage matrixPage = matrixBufferManager.getPage(matrixName, pageRowCounter, pageColumnCounter);
-                vector<vector<int>> grid = matrixPage.elementsInPage;
-                vector<vector<int>> grid_T = transpose(grid);
-                vector<vector<int>> grid_R = compute(grid, grid_T);
-                matrixBufferManager.writePage(resultantMatrixName, pageRowCounter, pageColumnCounter, grid_R, matrixSize, smallMatrixSize, smallMatrixCount);
+                Cursor cursor(matrixName, pageIndex1, true);
+                vector<vector<int>> subMatrix = cursor.getPage();
+                vector<vector<int>> subMatrix_t = transpose(subMatrix);
+                vector<vector<int>> subMatrix_r = compute(subMatrix, subMatrix_t);
+                bufferManager.writePage(resultantMatrixName, pageIndex1, subMatrix_r, subMatrix_r.size());
             }
             else {
-                MatrixPage matrixPage1 = matrixBufferManager.getPage(matrixName, pageRowCounter, pageColumnCounter);
-                MatrixPage matrixPage2 = matrixBufferManager.getPage(matrixName, pageColumnCounter, pageRowCounter);
-                vector<vector<int>> grid1 = matrixPage1.elementsInPage;
-                vector<vector<int>> grid2 = matrixPage2.elementsInPage;
-                vector<vector<int>> grid1_T = transpose(grid1);
-                vector<vector<int>> grid2_T = transpose(grid2);
-                vector<vector<int>> grid1_R = compute(grid1, grid2_T);
-                vector<vector<int>> grid2_R = compute(grid2, grid1_T);
+                Cursor cursor1(matrixName, pageIndex1, true);
+                Cursor cursor2(matrixName, pageIndex2, true);
 
-                matrixBufferManager.writePage(resultantMatrixName, pageRowCounter, pageColumnCounter, grid1_R, matrixSize, smallMatrixSize, smallMatrixCount);
-                matrixBufferManager.writePage(resultantMatrixName, pageColumnCounter, pageRowCounter, grid2_R, matrixSize, smallMatrixSize, smallMatrixCount);
+                vector<vector<int>> subMatrix1 = cursor1.getPage();
+                vector<vector<int>> subMatrix2 = cursor2.getPage();
+
+                vector<vector<int>> subMatrix1_t = transpose(subMatrix1);
+                vector<vector<int>> subMatrix2_t = transpose(subMatrix2);
+
+                vector<vector<int>> subMatrix1_r = compute(subMatrix1, subMatrix2_t);
+                vector<vector<int>> subMatrix2_r = compute(subMatrix2, subMatrix1_t);
+
+                bufferManager.writePage(resultantMatrixName, pageIndex1, subMatrix1_r, subMatrix1_r.size());
+                bufferManager.writePage(resultantMatrixName, pageIndex2, subMatrix2_r, subMatrix2_r.size());
             }
         }
     }
 
     matrixCatalogue.insertMatrix(resultantMatrix);
 
-    return;
+    cout << "Number of blocks read: " << BLOCKS_READ << endl;
+    cout << "Number of blocks written:: " << BLOCKS_WRITTEN << endl;
+    cout << "Number of blocks accessed: " << BLOCKS_READ + BLOCKS_WRITTEN << endl;
 }

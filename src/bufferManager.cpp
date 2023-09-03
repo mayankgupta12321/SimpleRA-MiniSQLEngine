@@ -13,14 +13,16 @@ BufferManager::BufferManager()
  * @param pageIndex 
  * @return Page 
  */
-Page BufferManager::getPage(string tableName, int pageIndex)
+Page BufferManager::getPage(string tableName, int pageIndex, bool isMatrix)
 {
     logger.log("BufferManager::getPage");
+    BLOCKS_READ++;
+
     string pageName = "../data/temp/"+tableName + "_Page" + to_string(pageIndex);
     if (this->inPool(pageName))
         return this->getFromPool(pageName);
     else
-        return this->insertIntoPool(tableName, pageIndex);
+        return this->insertIntoPool(tableName, pageIndex, isMatrix);
 }
 
 /**
@@ -66,14 +68,25 @@ Page BufferManager::getFromPool(string pageName)
  * @param pageIndex 
  * @return Page 
  */
-Page BufferManager::insertIntoPool(string tableName, int pageIndex)
+Page BufferManager::insertIntoPool(string tableName, int pageIndex, bool isMatrix)
 {
     logger.log("BufferManager::insertIntoPool");
-    Page page(tableName, pageIndex);
+    Page page(tableName, pageIndex, isMatrix);
     if (this->pages.size() >= BLOCK_COUNT)
         pages.pop_front();
     pages.push_back(page);
     return page;
+}
+
+void BufferManager::deleteFromPool(string pageName) {
+    logger.log("BufferManager::deleteFromPool");
+    int sz = pages.size();
+    while(sz--) {
+        if(pages.front().pageName != pageName) {
+            pages.push_back(pages.front());
+        }
+        pages.pop_front();
+    }
 }
 
 /**
@@ -88,6 +101,8 @@ Page BufferManager::insertIntoPool(string tableName, int pageIndex)
 void BufferManager::writePage(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount)
 {
     logger.log("BufferManager::writePage");
+    BLOCKS_WRITTEN++;
+    
     Page page(tableName, pageIndex, rows, rowCount);
     page.writePage();
 }
@@ -102,7 +117,7 @@ void BufferManager::deleteFile(string fileName)
     
     if (remove(fileName.c_str()))
         logger.log("BufferManager::deleteFile: Err");
-        else logger.log("BufferManager::deleteFile: Success");
+    else logger.log("BufferManager::deleteFile: Success");
 }
 
 /**
@@ -115,6 +130,19 @@ void BufferManager::deleteFile(string fileName)
 void BufferManager::deleteFile(string tableName, int pageIndex)
 {
     logger.log("BufferManager::deleteFile");
-    string fileName = "../data/temp/"+tableName + "_Page" + to_string(pageIndex);
+    string fileName = "../data/temp/" + tableName + "_Page" + to_string(pageIndex);
     this->deleteFile(fileName);
+}
+
+void BufferManager::renameFile(string tableName, string newTableName, int pageIndex)
+{
+    logger.log("BufferManager::renameFile");
+    string curFileName = "../data/temp/" + tableName + "_Page" + to_string(pageIndex);
+    string newFileName = "../data/temp/" + newTableName + + "_Page" + to_string(pageIndex);
+
+    if(rename(curFileName.c_str(), newFileName.c_str()))
+        logger.log("BufferManager::renameFile: Err");
+    else logger.log("BufferManager::renameFile: Success");
+
+    this->deleteFromPool(curFileName);
 }

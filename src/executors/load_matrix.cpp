@@ -35,6 +35,9 @@ bool semanticParseLOAD_MATRIX(){
 void executeLOAD_MATRIX()
 {
     logger.log("executeLOAD_MATRIX");
+    
+    BLOCKS_READ = 0;
+    BLOCKS_WRITTEN = 0;
 
     Matrix *matrix = new Matrix(parsedQuery.loadRelationName);
     if (matrix->load())
@@ -42,5 +45,8 @@ void executeLOAD_MATRIX()
         matrixCatalogue.insertMatrix(matrix);
         cout << "Loaded Matrix => Matrix Size : " << matrix->matrixSize << "*" << matrix->matrixSize << endl;
     }
-    return;
+
+    cout << "Number of blocks read: " << BLOCKS_READ << endl;
+    cout << "Number of blocks written:: " << BLOCKS_WRITTEN << endl;
+    cout << "Number of blocks accessed: " << BLOCKS_READ + BLOCKS_WRITTEN << endl;
 }

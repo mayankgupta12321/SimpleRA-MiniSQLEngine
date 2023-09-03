@@ -29,6 +29,10 @@ bool semanticParseCHECKSYMMETRY(){
 void executeCHECKSYMMETRY()
 {
     logger.log("executeCHECKSYMMETRY");
+    
+    BLOCKS_READ = 0;
+    BLOCKS_WRITTEN = 0;
+    
     Matrix* matrix = matrixCatalogue.getMatrix(parsedQuery.checksymmetryRelationName);
     if(matrix->isSymmetric()) {
         cout << "TRUE" << endl;
@@ -36,6 +40,10 @@ void executeCHECKSYMMETRY()
     else {
         cout << "FALSE" << endl;
     }
+
+    cout << "Number of blocks read: " << BLOCKS_READ << endl;
+    cout << "Number of blocks written:: " << BLOCKS_WRITTEN << endl;
+    cout << "Number of blocks accessed: " << BLOCKS_READ + BLOCKS_WRITTEN << endl;
     
     return;
 }

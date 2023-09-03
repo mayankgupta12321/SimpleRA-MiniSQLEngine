@@ -1,6 +1,3 @@
-#include "matrixBufferManager.h"
-
-
 class Matrix 
 {
 public:
@@ -10,6 +7,7 @@ public:
     unsigned int matrixSize = 0;
     unsigned int smallMatrixSize = 0;
     unsigned int smallMatrixCount = 0;
+    unsigned int blockCount = 0;
     
     
     Matrix();
@@ -23,28 +21,27 @@ public:
     void makePermanent();
     bool isPermanent();
     void rename(string newMatrixName);
-    void transpose(vector<vector<int>>& grid);
+    vector<vector<int>> transpose(vector<vector<int>>& grid);
     void transposeMatrix();
-    bool isSymmetric(vector<vector<int>>& grid);
     bool isSymmetric();
     void unload();
+    void getNextPage(Cursor *cursor);
 
-
-    void writeRows(vector<vector<vector<int>>> elementsInPages, int pageRowCounter, int rowsToWrite, int columnsToWrite, ostream &fout)
+    void writeRow(vector<int> row, ostream &fout, int columnsToWrite, bool isPermanent = false)
     {
-        logger.log("Matrix::printRows");
-
-        for(int rowCounter = 0; rowCounter < this->smallMatrixSize; rowCounter++) {
-            for(int pageColumnCounter = 0; pageColumnCounter < this->smallMatrixCount; pageColumnCounter++) {
-                for(int columnCounter = 0; columnCounter < this->smallMatrixSize; columnCounter++) {
-                    if(pageRowCounter * this->smallMatrixSize +rowCounter >= rowsToWrite) return;
-                    if(pageColumnCounter * this->smallMatrixSize + columnCounter >= columnsToWrite) continue;
-                    if(pageColumnCounter != 0 || columnCounter != 0)
-                        fout << ",";
-                    fout << elementsInPages[pageColumnCounter][rowCounter][columnCounter];
+        logger.log("Table::printRow");
+        for (int columnCounter = 0; columnCounter < columnsToWrite; columnCounter++)
+        {
+            if (columnCounter != 0){
+                if(isPermanent){
+                    fout << ",";
                 }
-            }
-            fout << endl;
+                else{
+                    fout << " ";
+                }
+            }                
+            fout << row[columnCounter];
         }
+        fout << endl;
     }
 };

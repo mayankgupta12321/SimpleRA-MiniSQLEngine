@@ -29,7 +29,14 @@ bool semanticParseTRANSPOSE_MATRIX(){
 void executeTRANSPOSE_MATRIX()
 {
     logger.log("executeTRANSPOSE_MATRIX");
+    
+    BLOCKS_READ = 0;
+    BLOCKS_WRITTEN = 0;
+    
     Matrix* matrix = matrixCatalogue.getMatrix(parsedQuery.transposeRelationName);
     matrix->transposeMatrix();
-    return;
+
+    cout << "Number of blocks read: " << BLOCKS_READ << endl;
+    cout << "Number of blocks written:: " << BLOCKS_WRITTEN << endl;
+    cout << "Number of blocks accessed: " << BLOCKS_READ + BLOCKS_WRITTEN << endl;
 }
