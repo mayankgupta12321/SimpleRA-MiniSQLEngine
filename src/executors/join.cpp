@@ -66,5 +66,13 @@ bool semanticParseJOIN()
 void executeJOIN()
 {
     logger.log("executeJOIN");
+    
+    // cout << parsedQuery.joinResultRelationName << "\n";
+    // cout << parsedQuery.joinFirstRelationName << "\n";
+    // cout << parsedQuery.joinSecondRelationName << "\n";
+    // cout << parsedQuery.joinFirstColumnName << "\n";
+    // cout << parsedQuery.joinSecondColumnName << "\n";
+    // cout << parsedQuery.joinBinaryOperator << "\n";
+    // cout << "-------------------------------------\n";
     return;
 }

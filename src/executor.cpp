@@ -24,6 +24,8 @@ void executeCommand(){
         case TRANSPOSE_MATRIX: executeTRANSPOSE_MATRIX(); break;
         case CHECKSYMMETRY: executeCHECKSYMMETRY(); break;
         case COMPUTE: executeCOMPUTE(); break;
+        case ORDER: executeORDER(); break;
+        case GROUP: executeGROUP(); break;
         default: cout<<"PARSING ERROR"<<endl;
     }
 

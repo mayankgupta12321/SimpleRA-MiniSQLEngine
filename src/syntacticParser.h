@@ -26,6 +26,8 @@ enum QueryType
     TRANSPOSE_MATRIX,
     CHECKSYMMETRY,
     COMPUTE,
+    ORDER,
+    GROUP,
     UNDETERMINED
 };
 
@@ -52,6 +54,15 @@ enum SelectType
     COLUMN,
     INT_LITERAL,
     NO_SELECT_CLAUSE
+};
+
+enum AggregateFunction
+{
+    SUM,
+    MAX,
+    MIN,
+    AVG,
+    NO_AGGREGATE_CLAUSE
 };
 
 class ParsedQuery
@@ -107,12 +118,25 @@ public:
     string selectionSecondColumnName = "";
     int selectionIntLiteral = 0;
 
-    SortingStrategy sortingStrategy = NO_SORT_CLAUSE;
-    string sortResultRelationName = "";
-    string sortColumnName = "";
     string sortRelationName = "";
-
     string sourceFileName = "";
+    vector<string> sortColumnList;
+    vector<SortingStrategy> sortStrategyList;
+
+    SortingStrategy orderSortingStrategy = NO_SORT_CLAUSE;
+    string orderResultRelationName = "";
+    string orderRelationName = "";
+    string orderColumnName = "";
+
+    string groupResultRelationName = "";
+    string groupRelationName = "";
+    string groupColumnName = "";
+    BinaryOperator groupBinaryOperator = NO_BINOP_CLAUSE;
+    int groupAggregateColumnValue = 0;
+    AggregateFunction groupAggregateFunction = NO_AGGREGATE_CLAUSE;
+    string groupAggregateColumnName = "";
+    AggregateFunction groupReturnAggregateFunction = NO_AGGREGATE_CLAUSE;
+    string groupReturnAggregateColumnName = "";
 
     ParsedQuery();
     void clear();
@@ -133,6 +157,8 @@ bool syntacticParseRENAME();
 bool syntacticParseSELECTION();
 bool syntacticParseSORT();
 bool syntacticParseSOURCE();
+bool syntacticParseORDER();
+bool syntacticParseGROUP();
 
 bool syntacticParseLOAD_MATRIX();
 bool syntacticParsePRINT_MATRIX();
