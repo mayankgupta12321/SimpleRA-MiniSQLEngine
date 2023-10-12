@@ -31,23 +31,23 @@ enum QueryType
     UNDETERMINED
 };
 
-enum BinaryOperator
-{
-    LESS_THAN,
-    GREATER_THAN,
-    LEQ,
-    GEQ,
-    EQUAL,
-    NOT_EQUAL,
-    NO_BINOP_CLAUSE
-};
+// enum BinaryOperator
+// {
+//     LESS_THAN,
+//     GREATER_THAN,
+//     LEQ,
+//     GEQ,
+//     EQUAL,
+//     NOT_EQUAL,
+//     NO_BINOP_CLAUSE
+// };
 
-enum SortingStrategy
-{
-    ASC,
-    DESC,
-    NO_SORT_CLAUSE
-};
+// enum SortingStrategy
+// {
+//     ASC,
+//     DESC,
+//     NO_SORT_CLAUSE
+// };
 
 enum SelectType
 {
@@ -56,14 +56,14 @@ enum SelectType
     NO_SELECT_CLAUSE
 };
 
-enum AggregateFunction
-{
-    SUM,
-    MAX,
-    MIN,
-    AVG,
-    NO_AGGREGATE_CLAUSE
-};
+// enum AggregateFunction
+// {
+//     SUM,
+//     MAX,
+//     MIN,
+//     AVG,
+//     NO_AGGREGATE_CLAUSE
+// };
 
 class ParsedQuery
 {
@@ -133,9 +133,9 @@ public:
     string groupColumnName = "";
     BinaryOperator groupBinaryOperator = NO_BINOP_CLAUSE;
     int groupAggregateColumnValue = 0;
-    AggregateFunction groupAggregateFunction = NO_AGGREGATE_CLAUSE;
+    string groupAggregateFunction = "";
     string groupAggregateColumnName = "";
-    AggregateFunction groupReturnAggregateFunction = NO_AGGREGATE_CLAUSE;
+    string groupReturnAggregateFunction = "";
     string groupReturnAggregateColumnName = "";
 
     ParsedQuery();

@@ -146,9 +146,9 @@ void ParsedQuery::clear()
     this->groupColumnName = "";
     this->groupBinaryOperator = NO_BINOP_CLAUSE;
     this->groupAggregateColumnValue = 0;
-    this->groupAggregateFunction = NO_AGGREGATE_CLAUSE;
+    this->groupAggregateFunction = "";
     this->groupAggregateColumnName = "";
-    this->groupReturnAggregateFunction = NO_AGGREGATE_CLAUSE;
+    this->groupReturnAggregateFunction = "";
     this->groupReturnAggregateColumnName = "";
 
     this->sourceFileName = "";

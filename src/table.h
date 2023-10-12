@@ -14,6 +14,17 @@ enum SortingStrategy
     NO_SORT_CLAUSE
 };
 
+enum BinaryOperator
+{
+    LESS_THAN,
+    GREATER_THAN,
+    LEQ,
+    GEQ,
+    EQUAL,
+    NOT_EQUAL,
+    NO_BINOP_CLAUSE
+};
+
 /**
  * @brief The Table class holds all information related to a loaded table. It
  * also implements methods that interact with the parsers, executors, cursors
@@ -25,12 +36,12 @@ enum SortingStrategy
  */
 class Table
 {
-    vector<unordered_set<int>> distinctValuesInColumns;
 
 public:
     string sourceFileName = "";
     string tableName = "";
     vector<string> columns;
+    vector<unordered_set<int>> distinctValuesInColumns;
     vector<uint> distinctValuesPerColumnCount;
     uint columnCount = 0;
     long long int rowCount = 0;
@@ -58,6 +69,7 @@ public:
     int getColumnIndex(string columnName);
     void unload();
     void sortTable(vector<int> columnIndices, vector<SortingStrategy> sortStrategyList);
+    void groupTable(Table* tempTable, int groupColumnIndex, BinaryOperator groupBinaryOperator, int groupAggregateColumnValue, string groupAggregateFunction, int groupAggregateColumnIndex, string groupReturnAggregateFunction, int groupReturnAggregateColumnIndex);
 
     /**
  * @brief Static function that takes a vector of valued and prints them out in a

@@ -449,3 +449,144 @@ void Table::sortTable(vector<int> columnIndices, vector<SortingStrategy> sortStr
         }
     }
 }
+
+
+void Table::groupTable(Table* tempTable, int groupColumnIndex, BinaryOperator groupBinaryOperator, int groupAggregateColumnValue, string groupAggregateFunction, int groupAggregateColumnIndex, string groupReturnAggregateFunction, int groupReturnAggregateColumnIndex) {
+    logger.log("Table::groupTable");
+    
+    this->distinctValuesInColumns.assign(this->columnCount, {});
+    this->distinctValuesPerColumnCount.assign(this->columnCount, 0);
+    
+    vector<vector<int>> rows;
+
+    Cursor cursor(tempTable->tableName, 0);
+    vector<int> row = cursor.getNext();
+
+    int prevColumnVal = row[groupColumnIndex], rowCount = 0;
+    int groupAggregateColumnRes = 0, groupReturnAggregateColumnRes = 0;
+
+    while(!row.empty()) {
+        if(row[groupColumnIndex] != prevColumnVal) {
+            if(groupAggregateFunction == "AVG") {
+                groupAggregateColumnRes /= rowCount;
+            }
+
+            if(groupReturnAggregateFunction == "AVG") {
+                groupReturnAggregateColumnRes /= rowCount;
+            }
+
+            if(groupBinaryOperator == LESS_THAN) {
+                if(groupAggregateColumnRes < groupAggregateColumnValue) {
+                    rows.push_back({prevColumnVal, groupReturnAggregateColumnRes});
+                    this->updateStatistics({prevColumnVal, groupReturnAggregateColumnRes});
+                }
+            }
+            else if(groupBinaryOperator == LEQ) {
+                if(groupAggregateColumnRes <= groupAggregateColumnValue) {
+                    rows.push_back({prevColumnVal, groupReturnAggregateColumnRes});
+                    this->updateStatistics({prevColumnVal, groupReturnAggregateColumnRes});
+                }
+            }
+            else if(groupBinaryOperator == GREATER_THAN) {
+                if(groupAggregateColumnRes > groupAggregateColumnValue) {
+                    rows.push_back({prevColumnVal, groupReturnAggregateColumnRes});
+                    this->updateStatistics({prevColumnVal, groupReturnAggregateColumnRes});
+                }
+            }
+            else if(groupBinaryOperator == GEQ) {
+                if(groupAggregateColumnRes >= groupAggregateColumnValue) {
+                    rows.push_back({prevColumnVal, groupReturnAggregateColumnRes});
+                    this->updateStatistics({prevColumnVal, groupReturnAggregateColumnRes});
+                }
+            }
+            else {
+                if(groupAggregateColumnRes == groupAggregateColumnValue) {
+                    rows.push_back({prevColumnVal, groupReturnAggregateColumnRes});
+                    this->updateStatistics({prevColumnVal, groupReturnAggregateColumnRes});
+                }
+            }
+
+            if(rows.size() == this->maxRowsPerBlock) {
+                bufferManager.writePage(this->tableName, this->blockCount, rows, rows.size());
+                this->blockCount++;
+                this->rowsPerBlockCount.emplace_back(rows.size());
+                rows.clear();
+            }
+            
+            prevColumnVal = row[groupColumnIndex];
+            rowCount = 0;
+            groupAggregateColumnRes = 0;
+            groupReturnAggregateColumnRes = 0;
+        }
+
+        if(groupAggregateFunction == "MAX") {
+            groupAggregateColumnRes = max(groupAggregateColumnRes, row[groupAggregateColumnIndex]);
+        }
+        else if(groupAggregateFunction == "MIN") {
+            groupAggregateColumnRes = min(groupAggregateColumnRes, row[groupAggregateColumnIndex]);
+        }
+        else {
+            groupAggregateColumnRes += row[groupAggregateColumnIndex];
+        }
+
+        if(groupReturnAggregateFunction == "MAX") {
+            groupReturnAggregateColumnRes = max(groupReturnAggregateColumnRes, row[groupReturnAggregateColumnIndex]);
+        }
+        else if(groupReturnAggregateFunction == "MIN") {
+            groupReturnAggregateColumnRes = min(groupReturnAggregateColumnRes, row[groupReturnAggregateColumnIndex]);
+        }
+        else {
+            groupReturnAggregateColumnRes += row[groupReturnAggregateColumnIndex];
+        }
+        rowCount++;
+
+        row = cursor.getNext();
+    }
+
+    if(groupAggregateFunction == "AVG") {
+        groupAggregateColumnRes /= rowCount;
+    }
+
+    if(groupReturnAggregateFunction == "AVG") {
+        groupReturnAggregateColumnRes /= rowCount;
+    }
+            
+    if(groupBinaryOperator == LESS_THAN) {
+        if(groupAggregateColumnRes < groupAggregateColumnValue) {
+            rows.push_back({prevColumnVal, groupReturnAggregateColumnRes});
+            this->updateStatistics({prevColumnVal, groupReturnAggregateColumnRes});
+        }
+    }
+    else if(groupBinaryOperator == LEQ) {
+        if(groupAggregateColumnRes <= groupAggregateColumnValue) {
+            rows.push_back({prevColumnVal, groupReturnAggregateColumnRes});
+            this->updateStatistics({prevColumnVal, groupReturnAggregateColumnRes});
+        }
+    }
+    else if(groupBinaryOperator == GREATER_THAN) {
+        if(groupAggregateColumnRes > groupAggregateColumnValue) {
+            rows.push_back({prevColumnVal, groupReturnAggregateColumnRes});
+            this->updateStatistics({prevColumnVal, groupReturnAggregateColumnRes});
+        }
+    }
+    else if(groupBinaryOperator == GEQ) {
+        if(groupAggregateColumnRes >= groupAggregateColumnValue) {
+            rows.push_back({prevColumnVal, groupReturnAggregateColumnRes});
+            this->updateStatistics({prevColumnVal, groupReturnAggregateColumnRes});
+        }
+    }
+    else {
+        if(groupAggregateColumnRes == groupAggregateColumnValue) {
+            rows.push_back({prevColumnVal, groupReturnAggregateColumnRes});
+            this->updateStatistics({prevColumnVal, groupReturnAggregateColumnRes});
+        }
+    }
+    
+    if(rows.size() > 0) {
+        bufferManager.writePage(this->tableName, this->blockCount, rows, rows.size());
+        this->blockCount++;
+        this->rowsPerBlockCount.emplace_back(rows.size());
+        rows.clear();
+    }
+
+}

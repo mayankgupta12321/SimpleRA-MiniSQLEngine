@@ -63,6 +63,7 @@ void executeORDER()
     Table *resultantTable = new Table(parsedQuery.orderResultRelationName);
 
     resultantTable->columns = table->columns;
+    resultantTable->distinctValuesInColumns = table->distinctValuesInColumns;
     resultantTable->distinctValuesPerColumnCount = table->distinctValuesPerColumnCount;
     resultantTable->columnCount = table->columnCount;
     resultantTable->rowCount = table->rowCount;

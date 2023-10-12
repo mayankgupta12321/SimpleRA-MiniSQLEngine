@@ -58,14 +58,9 @@ bool syntacticParseGROUP()
         return false;
     }
     string aggregate_function_name = aggregate_attribute_name.substr(0, 3);
-    if (aggregate_function_name == "SUM")
-        parsedQuery.groupAggregateFunction = SUM;
-    else if (aggregate_function_name == "MAX")
-        parsedQuery.groupAggregateFunction = MAX;
-    else if (aggregate_function_name == "MIN")
-        parsedQuery.groupAggregateFunction = MIN;
-    else if (aggregate_function_name == "AVG")
-        parsedQuery.groupAggregateFunction = AVG;
+    if (aggregate_function_name == "SUM" || aggregate_function_name == "MAX" || aggregate_function_name == "MIN" || aggregate_function_name == "AVG") {
+        parsedQuery.groupAggregateFunction = aggregate_function_name;
+    }
     else
     {
         cout << "SYNTAX ERROR" << endl;
@@ -74,20 +69,15 @@ bool syntacticParseGROUP()
     parsedQuery.groupAggregateColumnName = aggregate_attribute_name.substr(4, aggregate_attribute_name.size() - 5);
 
     
-    string return_aggregate_attribute_name = tokenizedQuery[8];
+    string return_aggregate_attribute_name = tokenizedQuery[12];
     if(return_aggregate_attribute_name.size() <= 5 || return_aggregate_attribute_name[3] != '(' || return_aggregate_attribute_name.back() != ')') {
         cout << "SYNTAX ERROR" << endl;
         return false;
     }
     string return_aggregate_function_name = return_aggregate_attribute_name.substr(0, 3);
-    if (return_aggregate_function_name == "SUM")
-        parsedQuery.groupReturnAggregateFunction = SUM;
-    else if (return_aggregate_function_name == "MAX")
-        parsedQuery.groupReturnAggregateFunction = MAX;
-    else if (return_aggregate_function_name == "MIN")
-        parsedQuery.groupReturnAggregateFunction = MIN;
-    else if (return_aggregate_function_name == "AVG")
-        parsedQuery.groupReturnAggregateFunction = AVG;
+    if (return_aggregate_function_name == "SUM" || return_aggregate_function_name == "MAX" || return_aggregate_function_name == "MIN" || return_aggregate_function_name == "AVG") {
+        parsedQuery.groupReturnAggregateFunction = return_aggregate_function_name;
+    }
     else
     {
         cout << "SYNTAX ERROR" << endl;
@@ -127,17 +117,53 @@ bool semanticParseGROUP()
 void executeGROUP()
 {
     logger.log("executeGROUP");
- 
-    // cout << parsedQuery.groupResultRelationName        << "\n";
-    // cout << parsedQuery.groupRelationName              << "\n";
-    // cout << parsedQuery.groupColumnName                << "\n";
-    // cout << parsedQuery.groupBinaryOperator            << "\n";
-    // cout << parsedQuery.groupAggregateColumnValue      << "\n";
-    // cout << parsedQuery.groupAggregateFunction         << "\n";
-    // cout << parsedQuery.groupAggregateColumnName       << "\n";
-    // cout << parsedQuery.groupReturnAggregateFunction   << "\n";
-    // cout << parsedQuery.groupReturnAggregateColumnName << "\n";
-    // cout << "-------------------\n";
- 
+
+    string tempFileName = parsedQuery.groupRelationName + "_Temp";
+    Table *table = tableCatalogue.getTable(parsedQuery.groupRelationName);
+    Table *tempTable = new Table(tempFileName);
+
+    tempTable->columns = table->columns;
+    tempTable->distinctValuesPerColumnCount = table->distinctValuesPerColumnCount;
+    tempTable->columnCount = table->columnCount;
+    tempTable->rowCount = table->rowCount;
+    tempTable->blockCount = table->blockCount;
+    tempTable->maxRowsPerBlock = table->maxRowsPerBlock;
+    tempTable->rowsPerBlockCount = table->rowsPerBlockCount;
+    tempTable->indexed = table->indexed;
+    tempTable->indexedColumn = table->indexedColumn;
+    tempTable->indexingStrategy = table->indexingStrategy;
+
+    Cursor cursor(parsedQuery.groupRelationName, 0);
+    for(int i = 0; i < table->blockCount; i++) {
+        vector<vector<int>> rows = cursor.getPage();
+        int nRows = table->rowsPerBlockCount[i];
+        bufferManager.writePage(tempFileName, i, rows, nRows);
+        
+        if(i + 1 < table->blockCount) cursor.nextPage(i + 1);
+    }
+
+    tableCatalogue.insertTable(tempTable);
+    
+    int groupColumnIndex = table->getColumnIndex(parsedQuery.groupColumnName);
+    int groupAggregateColumnIndex = table->getColumnIndex(parsedQuery.groupAggregateColumnName);
+    int groupReturnAggregateColumnIndex = table->getColumnIndex(parsedQuery.groupReturnAggregateColumnName);
+
+    tempTable->sortTable({groupColumnIndex}, {ASC});
+
+    //--------------------------------------------------
+
+    Table *resultantTable = new Table(parsedQuery.groupResultRelationName);
+    resultantTable->columns = {parsedQuery.groupColumnName,  parsedQuery.groupReturnAggregateFunction + parsedQuery.groupReturnAggregateColumnName};
+    resultantTable->columnCount = resultantTable->columns.size();
+    resultantTable->maxRowsPerBlock = (uint)((BLOCK_SIZE * 1000) / (sizeof(int) * resultantTable->columnCount));
+    resultantTable->indexed = table->indexed;
+    resultantTable->indexedColumn = table->indexedColumn;
+    resultantTable->indexingStrategy = table->indexingStrategy;
+
+    resultantTable -> groupTable(tempTable, groupColumnIndex, parsedQuery.groupBinaryOperator, parsedQuery.groupAggregateColumnValue, parsedQuery.groupAggregateFunction, groupAggregateColumnIndex, parsedQuery.groupReturnAggregateFunction, groupReturnAggregateColumnIndex);
+    
+    tableCatalogue.insertTable(resultantTable);
+    tableCatalogue.deleteTable(tempTable->tableName);
+
     return;
 }
