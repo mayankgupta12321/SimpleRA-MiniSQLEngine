@@ -7,6 +7,13 @@ enum IndexingStrategy
     NOTHING
 };
 
+enum SortingStrategy
+{
+    ASC,
+    DESC,
+    NO_SORT_CLAUSE
+};
+
 /**
  * @brief The Table class holds all information related to a loaded table. It
  * also implements methods that interact with the parsers, executors, cursors
@@ -50,6 +57,7 @@ public:
     Cursor getCursor();
     int getColumnIndex(string columnName);
     void unload();
+    void sortTable(vector<int> columnIndices, vector<SortingStrategy> sortStrategyList);
 
     /**
  * @brief Static function that takes a vector of valued and prints them out in a

@@ -57,11 +57,35 @@ bool semanticParseORDER()
 
 void executeORDER()
 {
-    // cout << parsedQuery.orderResultRelationName << "\n";
-    // cout << parsedQuery.orderRelationName << "\n";
-    // cout << parsedQuery.orderColumnName << "\n";
-    // cout << parsedQuery.orderSortingStrategy << "\n";
-    // cout << "-------------------------------------\n";
+    logger.log("executeORDER");
+    
+    Table *table = tableCatalogue.getTable(parsedQuery.orderRelationName);
+    Table *resultantTable = new Table(parsedQuery.orderResultRelationName);
 
+    resultantTable->columns = table->columns;
+    resultantTable->distinctValuesPerColumnCount = table->distinctValuesPerColumnCount;
+    resultantTable->columnCount = table->columnCount;
+    resultantTable->rowCount = table->rowCount;
+    resultantTable->blockCount = table->blockCount;
+    resultantTable->maxRowsPerBlock = table->maxRowsPerBlock;
+    resultantTable->rowsPerBlockCount = table->rowsPerBlockCount;
+    resultantTable->indexed = table->indexed;
+    resultantTable->indexedColumn = table->indexedColumn;
+    resultantTable->indexingStrategy = table->indexingStrategy;
+
+    
+    Cursor cursor(parsedQuery.orderRelationName, 0);
+    for(int i = 0; i < table->blockCount; i++) {
+        vector<vector<int>> rows = cursor.getPage();
+        int nRows = table->rowsPerBlockCount[i];
+        bufferManager.writePage(parsedQuery.orderResultRelationName, i, rows, nRows);
+        
+        if(i + 1 < table->blockCount) cursor.nextPage(i + 1);
+    }
+
+    tableCatalogue.insertTable(resultantTable);
+
+    int columnIndices = table->getColumnIndex(parsedQuery.orderColumnName);
+    resultantTable->sortTable({columnIndices}, {parsedQuery.orderSortingStrategy});
     return;
 }

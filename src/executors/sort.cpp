@@ -70,17 +70,13 @@ bool semanticParseSORT(){
 
 void executeSORT(){
     logger.log("executeSORT");
-    Table table = *tableCatalogue.getTable(parsedQuery.sortRelationName);
+    Table* table = tableCatalogue.getTable(parsedQuery.sortRelationName);
     vector<int> columnIndices;
     for (int columnCounter = 0; columnCounter < parsedQuery.sortColumnList.size(); columnCounter++)
     {
-        columnIndices.emplace_back(table.getColumnIndex(parsedQuery.sortColumnList[columnCounter]));
+        columnIndices.emplace_back(table->getColumnIndex(parsedQuery.sortColumnList[columnCounter]));
     }
-
-    // Write sorting code here
-
-    // for(int x: columnIndices) cout << x << "\n";
-    // cout << "-------------------------------\n";
     
+    table->sortTable(columnIndices, parsedQuery.sortStrategyList);
     return;
 }

@@ -335,3 +335,117 @@ int Table::getColumnIndex(string columnName)
             return columnCounter;
     }
 }
+
+
+void Table::sortTable(vector<int> columnIndices, vector<SortingStrategy> sortStrategyList)
+{
+    logger.log("Table::sortTable");
+
+    // Comparator for Sort Function
+    auto cmpSort = [this, columnIndices, sortStrategyList](vector<int> &a, vector<int> &b) {
+        for(int i = 0; i < columnIndices.size(); i++) {
+            if(sortStrategyList[i] == ASC) {
+                if(a[columnIndices[i]] < b[columnIndices[i]]) return true;
+                if(a[columnIndices[i]] > b[columnIndices[i]]) return false;
+            }
+            else {
+                if(a[columnIndices[i]] < b[columnIndices[i]]) return false;
+                if(a[columnIndices[i]] > b[columnIndices[i]]) return true;
+            }
+        }
+        return true;
+    };
+    
+    // Sorting Phase
+    Cursor cursor(tableName, 0);
+    for(int i = 0; i < blockCount; i++) {
+        vector<vector<int>> rows = cursor.getPage();
+        int nRows = rowsPerBlockCount[i];
+        sort(rows.begin(), rows.begin() + nRows, cmpSort);
+        bufferManager.writePage(tableName, i, rows, nRows);
+        bufferManager.deleteFromPool(cursor.page.pageName);
+        if(i + 1 < blockCount)  cursor.nextPage(i + 1);
+    }
+
+
+    // Merge Phase
+    int degreeOfMerge = BLOCK_COUNT - 1;
+    int totalLevels = ceil(log2(blockCount) / log2(degreeOfMerge));
+
+
+    // Comparator for Priority Queue
+    auto cmpPQ = [this, columnIndices, sortStrategyList](pair<vector<int>, int> &a, pair<vector<int>, int> &b) {
+        for(int i = 0; i < columnIndices.size(); i++) {
+            if(sortStrategyList[i] == ASC) {
+                if(a.first[columnIndices[i]] > b.first[columnIndices[i]]) return true;
+                if(a.first[columnIndices[i]] < b.first[columnIndices[i]]) return false;
+            }
+            else {
+                if(a.first[columnIndices[i]] > b.first[columnIndices[i]]) return false;
+                if(a.first[columnIndices[i]] < b.first[columnIndices[i]]) return true;
+            }
+        }
+        return true;
+    };
+
+    vector<uint> prefix = {0};
+    for(int c: rowsPerBlockCount) {
+        prefix.push_back(prefix.back() + c);  
+    }
+
+
+    for(int level = 0; level < totalLevels; level++) {
+        int tempPageIndex = 0;
+        for(int i = 0; i < blockCount; i += pow(3, level + 1)) {
+
+            priority_queue<pair<vector<int>, int>, vector<pair<vector<int>, int>>, decltype(cmpPQ)> pq(cmpPQ);
+            
+            vector<Cursor> cursorPool;
+            vector<int> recordsToProcessed;
+            int idx = 0;
+
+            int jump = pow(3, level);
+            for(int j = i; j < i + pow(3, level + 1) && j < blockCount; j += jump) {
+                int left = j;
+                int right = min(j + jump, (int)blockCount);
+                int nRecords = prefix[right] - prefix[left];
+                recordsToProcessed.push_back(nRecords);
+                // cout << left << " " << right << " " << nRecords << "\n";
+
+                Cursor cursor(this->tableName, j);
+                cursorPool.push_back(cursor);
+                pq.push({cursorPool[idx].getNext(), idx});
+                recordsToProcessed[idx]--;
+                idx++;
+            }
+
+            vector<vector<int>> rows;
+            while(!pq.empty()) {
+                auto [row, idx] = pq.top();
+                pq.pop();
+
+                rows.push_back(row);
+
+                if(rows.size() == maxRowsPerBlock) {
+                    bufferManager.writePage(tableName + "_temp", tempPageIndex, rows, rows.size());
+                    tempPageIndex++;
+                    rows.clear();
+                }
+
+                if(recordsToProcessed[idx] > 0) {
+                    pq.push({cursorPool[idx].getNext(), idx});
+                    recordsToProcessed[idx]--;
+                }
+            }
+
+            if(!rows.empty()) {
+                bufferManager.writePage(tableName + "_temp", tempPageIndex, rows, rows.size());
+                tempPageIndex++;
+                rows.clear();
+            }
+        }
+        for(int i = 0; i < blockCount; i++) {
+            bufferManager.renameFile(tableName + "_temp", tableName, i);
+        }
+    }
+}

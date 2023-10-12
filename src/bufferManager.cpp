@@ -145,4 +145,5 @@ void BufferManager::renameFile(string tableName, string newTableName, int pageIn
     else logger.log("BufferManager::renameFile: Success");
 
     this->deleteFromPool(curFileName);
+    this->deleteFromPool(newFileName);
 }
