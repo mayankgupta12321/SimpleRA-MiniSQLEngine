@@ -70,6 +70,8 @@ public:
     void unload();
     void sortTable(vector<int> columnIndices, vector<SortingStrategy> sortStrategyList);
     void groupTable(Table* tempTable, int groupColumnIndex, BinaryOperator groupBinaryOperator, int groupAggregateColumnValue, string groupAggregateFunction, int groupAggregateColumnIndex, string groupReturnAggregateFunction, int groupReturnAggregateColumnIndex);
+    void joinTable(Table *table1, Table *table2, int FirstJoinColumnIndex, int SecondJoinColumnIndex, BinaryOperator joinBinaryOperator);
+    void insertNewRow(vector<int> &row1, vector<int> &row2, vector<vector<int>> &rows);
 
     /**
  * @brief Static function that takes a vector of valued and prints them out in a

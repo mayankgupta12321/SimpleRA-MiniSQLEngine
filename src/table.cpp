@@ -513,7 +513,7 @@ void Table::groupTable(Table* tempTable, int groupColumnIndex, BinaryOperator gr
                 rows.clear();
             }
             
-            prevColumnVal = row[groupColumnIndex];
+            // prevColumnVal = row[groupColumnIndex];
             rowCount = 0;
             groupAggregateColumnRes = 0;
             groupReturnAggregateColumnRes = 0;
@@ -589,4 +589,150 @@ void Table::groupTable(Table* tempTable, int groupColumnIndex, BinaryOperator gr
         rows.clear();
     }
 
+}
+
+void Table::insertNewRow(vector<int> &row1, vector<int> &row2, vector<vector<int>> &rows) {
+    vector<int> currentRow;
+    currentRow.insert(currentRow.end(), row1.begin(), row1.end());
+    currentRow.insert(currentRow.end(), row2.begin(), row2.end());
+    rows.push_back(currentRow);
+    this->updateStatistics(currentRow);
+
+    if(rows.size() == this->maxRowsPerBlock) {
+        bufferManager.writePage(this->tableName, this->blockCount, rows, rows.size());
+        this->blockCount++;
+        this->rowsPerBlockCount.emplace_back(rows.size());
+        rows.clear();
+    }
+}
+
+void Table::joinTable(Table *table1, Table *table2, int joinFirstColumnIndex, int joinSecondColumnIndex, BinaryOperator joinBinaryOperator) {
+    logger.log("Table::joinTable");
+    
+    this->distinctValuesInColumns.assign(this->columnCount, {});
+    this->distinctValuesPerColumnCount.assign(this->columnCount, 0);
+    
+    vector<vector<int>> rows;
+
+    Cursor cursor1(table1->tableName, 0);
+    Cursor cursor2(table2->tableName, 0);
+
+    vector<int> row1 = cursor1.getNext();
+    vector<int> row2 = cursor2.getNext();
+
+    while(!row1.empty() && !row2.empty()) {
+        if(joinBinaryOperator == EQUAL) {
+            if(row1[joinFirstColumnIndex] == row2[joinSecondColumnIndex]) {
+                insertNewRow(row1, row2, rows);
+
+                Cursor nextCursor1 = cursor1, nextCursor2 = cursor2;
+                vector<int> nextRow1 = nextCursor1.getNext(), nextRow2 = nextCursor2.getNext();
+                while(!nextRow1.empty()) {
+                    if(nextRow1[joinFirstColumnIndex] == row2[joinSecondColumnIndex]) {
+                        insertNewRow(nextRow1, row2, rows);
+                    }
+                    else {
+                        break;
+                    }
+
+                    nextRow1 = nextCursor1.getNext();
+                }
+
+                while(!nextRow2.empty()) {
+                    if(row1[joinFirstColumnIndex] == nextRow2[joinSecondColumnIndex]) {
+                        insertNewRow(row1, nextRow2, rows);
+                    }
+                    else {
+                        break;
+                    }
+
+                    nextRow2 = nextCursor2.getNext();
+                }
+
+                row1 = cursor1.getNext();
+                row2 = cursor2.getNext();
+            }
+            else if(row1[joinFirstColumnIndex] < row2[joinSecondColumnIndex]) {
+                row1 = cursor1.getNext();
+            }
+            else {
+                row2 = cursor2.getNext();
+            }
+        }
+        else if(joinBinaryOperator == GREATER_THAN) {
+            if(row1[joinFirstColumnIndex] > row2[joinSecondColumnIndex]) {
+                insertNewRow(row1, row2, rows);
+
+                Cursor nextCursor1 = cursor1;
+                vector<int> nextRow1 = nextCursor1.getNext();
+                while(!nextRow1.empty()) {
+                    insertNewRow(nextRow1, row2, rows);
+                    nextRow1 = nextCursor1.getNext();
+                }
+
+                row2 = cursor2.getNext();
+            }
+            else {
+                row1 = cursor1.getNext();
+            }
+        }
+        else if(joinBinaryOperator == LESS_THAN) {
+            if(row1[joinFirstColumnIndex] < row2[joinSecondColumnIndex]) {
+                insertNewRow(row1, row2, rows);
+
+                Cursor nextCursor2 = cursor2;
+                vector<int> nextRow2 = nextCursor2.getNext();
+                while(!nextRow2.empty()) {
+                    insertNewRow(row1, nextRow2, rows);
+                    nextRow2 = nextCursor2.getNext();
+                }
+
+                row1 = cursor1.getNext();
+            }
+            else {
+                row2 = cursor2.getNext();
+            }
+        }
+        else if(joinBinaryOperator == GEQ) {
+            if(row1[joinFirstColumnIndex] >= row2[joinSecondColumnIndex]) {
+                insertNewRow(row1, row2, rows);
+
+                Cursor nextCursor1 = cursor1;
+                vector<int> nextRow1 = nextCursor1.getNext();
+                while(!nextRow1.empty()) {
+                    insertNewRow(nextRow1, row2, rows);
+                    nextRow1 = nextCursor1.getNext();
+                }
+
+                row2 = cursor2.getNext();
+            }
+            else {
+                row1 = cursor1.getNext();
+            }
+        }
+        else if(joinBinaryOperator == LEQ) {
+            if(row1[joinFirstColumnIndex] <= row2[joinSecondColumnIndex]) {
+                insertNewRow(row1, row2, rows);
+
+                Cursor nextCursor2 = cursor2;
+                vector<int> nextRow2 = nextCursor2.getNext();
+                while(!nextRow2.empty()) {
+                    insertNewRow(row1, nextRow2, rows);
+                    nextRow2 = nextCursor2.getNext();
+                }
+
+                row1 = cursor1.getNext();
+            }
+            else {
+                row2 = cursor2.getNext();
+            }
+        }
+    }
+
+    if(rows.size() > 0) {
+        bufferManager.writePage(this->tableName, this->blockCount, rows, rows.size());
+        this->blockCount++;
+        this->rowsPerBlockCount.emplace_back(rows.size());
+        rows.clear();
+    }
 }

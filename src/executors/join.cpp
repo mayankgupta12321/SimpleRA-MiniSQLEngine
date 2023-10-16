@@ -63,16 +63,66 @@ bool semanticParseJOIN()
     return true;
 }
 
+Table* createDeepCopyOfTable(string joinRelationName, string joinColumnName) {
+
+    string tempFileName = joinRelationName + "_Temp";
+    Table *table = tableCatalogue.getTable(joinRelationName);
+    Table *tempTable = new Table(tempFileName);
+
+    tempTable->columns = table->columns;
+    tempTable->distinctValuesPerColumnCount = table->distinctValuesPerColumnCount;
+    tempTable->columnCount = table->columnCount;
+    tempTable->rowCount = table->rowCount;
+    tempTable->blockCount = table->blockCount;
+    tempTable->maxRowsPerBlock = table->maxRowsPerBlock;
+    tempTable->rowsPerBlockCount = table->rowsPerBlockCount;
+    tempTable->indexed = table->indexed;
+    tempTable->indexedColumn = table->indexedColumn;
+    tempTable->indexingStrategy = table->indexingStrategy;
+
+    Cursor cursor(joinRelationName, 0);
+    for(int i = 0; i < table->blockCount; i++) {
+        vector<vector<int>> rows = cursor.getPage();
+        int nRows = table->rowsPerBlockCount[i];
+        bufferManager.writePage(tempFileName, i, rows, nRows);
+        
+        if(i + 1 < table->blockCount) cursor.nextPage(i + 1);
+    }
+
+    tableCatalogue.insertTable(tempTable);
+    int joinColumnIndex = table->getColumnIndex(joinColumnName);
+    tempTable->sortTable({joinColumnIndex}, {ASC});
+
+    return tempTable;
+}
 void executeJOIN()
 {
     logger.log("executeJOIN");
-    
-    // cout << parsedQuery.joinResultRelationName << "\n";
-    // cout << parsedQuery.joinFirstRelationName << "\n";
-    // cout << parsedQuery.joinSecondRelationName << "\n";
-    // cout << parsedQuery.joinFirstColumnName << "\n";
-    // cout << parsedQuery.joinSecondColumnName << "\n";
-    // cout << parsedQuery.joinBinaryOperator << "\n";
-    // cout << "-------------------------------------\n";
-    return;
+
+    Table *tempTable1 = createDeepCopyOfTable(parsedQuery.joinFirstRelationName, parsedQuery.joinFirstColumnName);
+    Table *tempTable2 = createDeepCopyOfTable(parsedQuery.joinSecondRelationName, parsedQuery.joinSecondColumnName);
+
+    int joinFirstColumnIndex = tempTable1->getColumnIndex(parsedQuery.joinFirstColumnName);
+    int joinSecondColumnIndex = tempTable2->getColumnIndex(parsedQuery.joinSecondColumnName);
+
+    // Resultant Table
+    Table *resultantTable = new Table(parsedQuery.joinResultRelationName);
+
+    resultantTable->columns = {};
+    for(string columnName : tempTable1->columns) {
+        resultantTable->columns.push_back(columnName);
+    }
+
+    for(string columnName : tempTable2->columns) {
+        resultantTable->columns.push_back(columnName);
+    }
+
+    resultantTable->columnCount = resultantTable->columns.size();
+    resultantTable->maxRowsPerBlock = (uint)((BLOCK_SIZE * 1000) / (sizeof(int) * resultantTable->columnCount));
+
+    resultantTable -> joinTable(tempTable1, tempTable2, joinFirstColumnIndex, joinSecondColumnIndex, parsedQuery.joinBinaryOperator);
+
+    tableCatalogue.insertTable(resultantTable);
+    tableCatalogue.deleteTable(tempTable1->tableName);
+    tableCatalogue.deleteTable(tempTable2->tableName);
 }
