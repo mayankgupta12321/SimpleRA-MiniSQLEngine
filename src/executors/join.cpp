@@ -65,7 +65,7 @@ bool semanticParseJOIN()
 
 Table* createDeepCopyOfTable(string joinRelationName, string joinColumnName) {
 
-    string tempFileName = joinRelationName + "_Temp";
+    string tempFileName = "$joinTemp_" + joinRelationName;
     Table *table = tableCatalogue.getTable(joinRelationName);
     Table *tempTable = new Table(tempFileName);
 

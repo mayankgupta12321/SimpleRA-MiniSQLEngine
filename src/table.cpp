@@ -353,7 +353,7 @@ void Table::sortTable(vector<int> columnIndices, vector<SortingStrategy> sortStr
                 if(a[columnIndices[i]] > b[columnIndices[i]]) return true;
             }
         }
-        return true;
+        return false;
     };
     
     // Sorting Phase
@@ -427,7 +427,7 @@ void Table::sortTable(vector<int> columnIndices, vector<SortingStrategy> sortStr
                 rows.push_back(row);
 
                 if(rows.size() == maxRowsPerBlock) {
-                    bufferManager.writePage(tableName + "_temp", tempPageIndex, rows, rows.size());
+                    bufferManager.writePage("$sortTemp_" + tableName, tempPageIndex, rows, rows.size());
                     tempPageIndex++;
                     rows.clear();
                 }
@@ -439,13 +439,13 @@ void Table::sortTable(vector<int> columnIndices, vector<SortingStrategy> sortStr
             }
 
             if(!rows.empty()) {
-                bufferManager.writePage(tableName + "_temp", tempPageIndex, rows, rows.size());
+                bufferManager.writePage("$sortTemp_" + tableName, tempPageIndex, rows, rows.size());
                 tempPageIndex++;
                 rows.clear();
             }
         }
         for(int i = 0; i < blockCount; i++) {
-            bufferManager.renameFile(tableName + "_temp", tableName, i);
+            bufferManager.renameFile("$sortTemp_" + tableName, tableName, i);
         }
     }
 }
@@ -462,8 +462,10 @@ void Table::groupTable(Table* tempTable, int groupColumnIndex, BinaryOperator gr
     Cursor cursor(tempTable->tableName, 0);
     vector<int> row = cursor.getNext();
 
-    int prevColumnVal = row[groupColumnIndex], rowCount = 0;
-    int groupAggregateColumnRes = 0, groupReturnAggregateColumnRes = 0;
+    int prevColumnVal = row[groupColumnIndex];
+    int rowCount = 0;
+    int groupAggregateColumnRes = (groupAggregateFunction == "MIN") ? 1000 : 0;
+    int groupReturnAggregateColumnRes = (groupReturnAggregateFunction == "MIN") ? 1000 : 0;
 
     while(!row.empty()) {
         if(row[groupColumnIndex] != prevColumnVal) {
@@ -513,10 +515,10 @@ void Table::groupTable(Table* tempTable, int groupColumnIndex, BinaryOperator gr
                 rows.clear();
             }
             
-            // prevColumnVal = row[groupColumnIndex];
+            prevColumnVal = row[groupColumnIndex];
             rowCount = 0;
-            groupAggregateColumnRes = 0;
-            groupReturnAggregateColumnRes = 0;
+            groupAggregateColumnRes = (groupAggregateFunction == "MIN") ? 1000 : 0;
+            groupReturnAggregateColumnRes = (groupReturnAggregateFunction == "MIN") ? 1000 : 0;
         }
 
         if(groupAggregateFunction == "MAX") {
@@ -538,6 +540,7 @@ void Table::groupTable(Table* tempTable, int groupColumnIndex, BinaryOperator gr
         else {
             groupReturnAggregateColumnRes += row[groupReturnAggregateColumnIndex];
         }
+        
         rowCount++;
 
         row = cursor.getNext();

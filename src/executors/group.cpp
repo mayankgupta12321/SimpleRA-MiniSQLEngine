@@ -118,7 +118,7 @@ void executeGROUP()
 {
     logger.log("executeGROUP");
 
-    string tempFileName = parsedQuery.groupRelationName + "_Temp";
+    string tempFileName = "$groupTemp_" + parsedQuery.groupRelationName;
     Table *table = tableCatalogue.getTable(parsedQuery.groupRelationName);
     Table *tempTable = new Table(tempFileName);
 
